@@ -1,0 +1,164 @@
+# Build Prompt: Premium Ghanaian E-Commerce Store (Phase 1 MVP)
+
+Use this as the spec for building the project. It's scoped deliberately to what should actually get built and shipped first — later phases are listed but out of scope until Phase 1 is live and taking real orders.
+
+---
+
+## 1. What to build
+
+A premium e-commerce storefront for the Ghanaian market, selling electronics/fashion/general goods, with the visual polish of Apple, Nothing, or Zara — clean, minimal, lots of whitespace, large product photography, rounded corners, soft shadows, dark mode support.
+
+**Target users:** university students, young professionals, tech enthusiasts, fashion shoppers.
+
+**Brand personality:** premium, modern, trustworthy, fast, secure, Ghanaian.
+
+---
+
+## 2. Design tokens
+
+```
+Primary:     #111111
+Background:  #FFFFFF
+Accent:      #0066FF
+Success:     #16A34A
+Danger:      #EF4444
+Gray:        #F8F8F8
+```
+
+Fonts: Inter or Geist (SF Pro Display as closest fallback).
+
+---
+
+## 3. Tech stack (Phase 1 — do not add more than this)
+
+- **Frontend:** Next.js 15 (App Router), TypeScript, Tailwind CSS, shadcn/ui, Zod
+- **Backend:** Next.js API Routes
+- **Database/Auth/Storage:** Supabase (Postgres, Supabase Auth, Supabase Storage)
+- **Hosting:** Vercel
+- **Payments:** Paystack (test mode) + Pay on Delivery
+- **Maps/Address:** OpenStreetMap + Leaflet.js + Nominatim (free geocoding) — do not use Google Maps
+- **Email:** Resend
+- **Error tracking:** Sentry
+- **CAPTCHA:** Cloudflare Turnstile
+
+Explicitly **do not add yet**: Framer Motion, TanStack Query, React Hook Form, SMS, WhatsApp, admin dashboard, coupons, wishlist, compare-products. These are Phase 2/3 — see section 9.
+
+All of the above are free to sign up for and build against with no credit card required, except Paystack going live (requires business verification once you're ready to accept real money — build entirely in test mode until then).
+
+---
+
+## 4. Database schema (Phase 1 tables)
+
+```
+users              (id, email, name, created_at)
+products           (id, name, description, category_id, brand_id, base_price, images[], created_at)
+product_variants   (id, product_id, name, sku, price, stock_count, attributes jsonb)  -- size/color/storage/RAM
+categories         (id, name, slug)
+brands             (id, name, slug)
+addresses          (id, user_id nullable, digital_address text, notes, lat, lng)
+orders             (id, user_id nullable, status, payment_method enum[paystack, pod], total, address_id, created_at)
+order_items        (id, order_id, product_variant_id, quantity, unit_price)
+payments           (id, order_id, provider, status, reference, amount)
+```
+
+Build variants as a separate table from day one — retrofitting them after cart/checkout logic exists is painful.
+
+Guest checkout: `orders.user_id` and `addresses.user_id` must be nullable.
+
+---
+
+## 5. Pages to build
+
+### Home
+- Hero: headline "Shop Premium Products at Great Prices", subtitle "Discover quality products with secure payments and nationwide delivery.", buttons "Shop Now" / "Browse Categories"
+- Featured categories grid (Phones, Laptops, Accessories, Gaming, Fashion, Smart Home, Watches)
+- Trending products grid
+- "Why Shop With Us" (Secure Payments, Genuine Products, Nationwide Delivery, Customer Support)
+- Newsletter signup (email capture only, no send integration yet)
+- Footer (About, Contact, Privacy Policy, Terms, FAQ, Social links)
+
+### Shop
+- Grid view with filters (Category, Brand, Price, Rating) and sorting (Newest, Lowest Price, Highest Price, Popular)
+
+### Product page
+- Image gallery with zoom, description, specifications, variant selector (size/color/storage/RAM with per-variant stock and price), Add to Cart, Buy Now
+- Recommended products section
+
+### Cart
+- Editable quantities, order summary, shipping calculator
+- No coupon field yet (Phase 3)
+
+### Checkout (3 steps)
+1. **Shipping address** — plain text field for GhanaPost GPS digital address (e.g. `GA-183-1234`) plus a Leaflet map for pin-drop confirmation. Do not depend on any GhanaPost API to validate it — there is no official one; the digital address is stored as free text for the courier's reference.
+2. **Payment** — Paystack (MoMo/card) or Pay on Delivery
+3. **Confirmation** — order summary + optional account creation
+
+**Guest checkout is required.** Do not force signup before purchase.
+
+**Pricing must state clearly** whether displayed prices are VAT/NHIL/GETFund-inclusive or itemized at checkout — pick one and be explicit about it in the UI copy.
+
+### User dashboard
+Orders, Addresses, Settings (Wishlist and Saved Cards are Phase 2+)
+
+### Order status (customer-facing)
+```
+Order Received → Payment Confirmed (or "Payment on Delivery") → Processing → Ready for Dispatch → Out for Delivery → Delivered
+```
+
+---
+
+## 6. Payments implementation notes
+
+- Integrate Paystack in **test mode only** for Phase 1 — sandbox keys, no card required, no verification needed to build and test the full flow.
+- Add Pay on Delivery as a first-class payment method in the order state machine (not an afterthought) — it needs its own "Awaiting Collection" status branch.
+- Do not attempt Paystack live-mode go-live as part of this build; that requires separate business verification paperwork the user completes outside of development.
+
+---
+
+## 7. Security & performance baseline
+
+- HTTPS enforced, CSRF protection, server-side input validation on every mutation
+- Rate limiting on auth and checkout endpoints
+- Cloudflare Turnstile on registration and checkout
+- Webhook signature verification for Paystack callbacks
+- Next.js image optimization, lazy loading, code splitting, Server Components by default
+- Sentry wired up before first deploy, not after
+
+---
+
+## 8. SEO baseline
+
+Next.js Metadata API per page, Open Graph + Twitter Card tags, structured data (Product schema on product pages), auto-generated sitemap.xml and robots.txt.
+
+---
+
+## 9. Explicitly out of scope for this build (future phases)
+
+**Phase 2:** Admin dashboard (Products, Orders, Customers, Categories, Analytics, Inventory, Support Tickets), reviews with star ratings/photos/verified-purchase badge, wishlist, email/SMS order notifications (Resend + Arkesel), Google Analytics 4 + Microsoft Clarity, Tawk.to live chat.
+
+**Phase 3:** Coupons, compare-products, AI shopping assistant, price-drop alerts, back-in-stock notifications, affiliate program, gift cards, store credit, referral rewards, flash sales, loyalty points, multi-vendor marketplace mode. WhatsApp notifications only if the business becomes formally registered and Meta Business Verification is worth completing — otherwise a free Telegram bot (via BotFather, no verification required) is the fallback for automated order updates.
+
+Do not scaffold these now — build them only once Phase 1 is live and taking real orders.
+
+---
+
+## 10. Folder structure
+
+```
+app/
+components/
+features/
+hooks/
+lib/
+services/
+types/
+utils/
+public/
+styles/
+```
+
+---
+
+## 11. Definition of done for Phase 1
+
+A visitor can: browse products with variants, add to cart, check out as a guest with a digital address + map pin, pay via Paystack test mode or select Pay on Delivery, see an order confirmation and status page — all on a deployed Vercel URL with Sentry monitoring live.
