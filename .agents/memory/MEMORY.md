@@ -1,0 +1,1 @@
+- [Kumasi Store stack](kumasi-store-stack.md) — key decisions: react-vite frontend, Express 5 + Drizzle + Replit PostgreSQL, Supabase auth client-only, Paystack test mode, react-leaflet maps.

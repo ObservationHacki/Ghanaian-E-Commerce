@@ -3,20 +3,34 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Kumasi Store — Premium Ghanaian E-Commerce API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: categories
+    description: Product categories
+  - name: brands
+    description: Product brands
+  - name: products
+    description: Product catalogue
+  - name: cart
+    description: Shopping cart (session-based, supports guest)
+  - name: orders
+    description: Order management
+  - name: addresses
+    description: Delivery addresses
+  - name: payments
+    description: Payment processing
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +38,401 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Categories ──────────────────────────────────────────────────────────────
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [categories]
+      summary: List all categories
+      responses:
+        "200":
+          description: Category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+
+  # ── Brands ──────────────────────────────────────────────────────────────────
+  /brands:
+    get:
+      operationId: listBrands
+      tags: [brands]
+      summary: List all brands
+      responses:
+        "200":
+          description: Brand list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Brand"
+
+  # ── Products ─────────────────────────────────────────────────────────────────
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List products with filters and pagination
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+          description: Category slug
+        - name: brand
+          in: query
+          schema: { type: string }
+          description: Brand slug
+        - name: minPrice
+          in: query
+          schema: { type: number }
+        - name: maxPrice
+          in: query
+          schema: { type: number }
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [newest, price_asc, price_desc, popular]
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer }
+        - name: limit
+          in: query
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Paginated product list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+
+  /products/featured:
+    get:
+      operationId: listFeaturedProducts
+      tags: [products]
+      summary: Trending and featured products for homepage
+      responses:
+        "200":
+          description: Featured products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductSummary"
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get single product with variants and related products
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Product detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductDetail"
+        "404":
+          description: Product not found
+
+  /products/{id}/related:
+    get:
+      operationId: listRelatedProducts
+      tags: [products]
+      summary: Get related products for a given product
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Related products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductSummary"
+
+  # ── Cart ─────────────────────────────────────────────────────────────────────
+  /cart/{sessionId}:
+    get:
+      operationId: getCart
+      tags: [cart]
+      summary: Get cart by session ID
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+    delete:
+      operationId: clearCart
+      tags: [cart]
+      summary: Clear all items from cart
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Cart cleared
+
+  /cart/{sessionId}/items:
+    post:
+      operationId: addCartItem
+      tags: [cart]
+      summary: Add item to cart
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemInput"
+      responses:
+        "201":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  /cart/{sessionId}/items/{itemId}:
+    patch:
+      operationId: updateCartItem
+      tags: [cart]
+      summary: Update cart item quantity
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CartItemPatch"
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+    delete:
+      operationId: removeCartItem
+      tags: [cart]
+      summary: Remove item from cart
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: itemId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Updated cart
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+
+  # ── Orders ───────────────────────────────────────────────────────────────────
+  /orders:
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place a new order (guest or authenticated)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Created order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: Validation error
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order by ID (guest via token or authenticated user)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "404":
+          description: Order not found
+
+  /users/me/orders:
+    get:
+      operationId: listMyOrders
+      tags: [orders]
+      summary: List all orders for the authenticated user
+      responses:
+        "200":
+          description: User order history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+
+  # ── Addresses ────────────────────────────────────────────────────────────────
+  /addresses:
+    get:
+      operationId: listAddresses
+      tags: [addresses]
+      summary: List saved addresses for authenticated user
+      responses:
+        "200":
+          description: Address list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Address"
+
+    post:
+      operationId: createAddress
+      tags: [addresses]
+      summary: Save a delivery address
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressInput"
+      responses:
+        "201":
+          description: Created address
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+
+  /addresses/{id}:
+    delete:
+      operationId: deleteAddress
+      tags: [addresses]
+      summary: Delete a saved address
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  # ── Payments ─────────────────────────────────────────────────────────────────
+  /payments/paystack/initialize:
+    post:
+      operationId: initializePaystackPayment
+      tags: [payments]
+      summary: Initialize a Paystack payment session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaystackInitInput"
+      responses:
+        "200":
+          description: Paystack authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaystackAuthResponse"
+
+  /payments/paystack/verify:
+    post:
+      operationId: verifyPaystackPayment
+      tags: [payments]
+      summary: Verify a Paystack payment by reference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaystackVerifyInput"
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentVerifyResponse"
+
+  /payments/webhook/paystack:
+    post:
+      operationId: paystackWebhook
+      tags: [payments]
+      summary: Paystack webhook handler
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WebhookPayload"
+      responses:
+        "200":
+          description: Acknowledged
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +440,237 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    Category:
+      type: object
+      properties:
+        id:           { type: integer }
+        name:         { type: string }
+        slug:         { type: string }
+        productCount: { type: integer }
+      required: [id, name, slug, productCount]
+
+    Brand:
+      type: object
+      properties:
+        id:   { type: integer }
+        name: { type: string }
+        slug: { type: string }
+      required: [id, name, slug]
+
+    ProductSummary:
+      type: object
+      properties:
+        id:          { type: integer }
+        name:        { type: string }
+        description: { type: string }
+        basePrice:   { type: number }
+        images:
+          type: array
+          items: { type: string }
+        categoryId:  { type: ["integer", "null"] }
+        categoryName: { type: ["string", "null"] }
+        brandId:     { type: ["integer", "null"] }
+        brandName:   { type: ["string", "null"] }
+        inStock:     { type: boolean }
+        variantCount: { type: integer }
+      required: [id, name, description, basePrice, images, inStock, variantCount]
+
+    ProductVariant:
+      type: object
+      properties:
+        id:         { type: integer }
+        name:       { type: string }
+        sku:        { type: string }
+        price:      { type: number }
+        stockCount: { type: integer }
+        attributes:
+          type: object
+          properties:
+            color:   { type: ["string", "null"] }
+            size:    { type: ["string", "null"] }
+            storage: { type: ["string", "null"] }
+            ram:     { type: ["string", "null"] }
+            variant: { type: ["string", "null"] }
+      required: [id, name, sku, price, stockCount]
+
+    ProductDetail:
+      type: object
+      properties:
+        id:          { type: integer }
+        name:        { type: string }
+        description: { type: string }
+        basePrice:   { type: number }
+        images:
+          type: array
+          items: { type: string }
+        categoryId:  { type: ["integer", "null"] }
+        categoryName: { type: ["string", "null"] }
+        brandId:     { type: ["integer", "null"] }
+        brandName:   { type: ["string", "null"] }
+        inStock:     { type: boolean }
+        variants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductVariant"
+      required: [id, name, description, basePrice, images, inStock, variants]
+
+    ProductListResponse:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductSummary"
+        total:      { type: integer }
+        page:       { type: integer }
+        totalPages: { type: integer }
+      required: [products, total, page, totalPages]
+
+    CartItem:
+      type: object
+      properties:
+        id:               { type: integer }
+        productVariantId: { type: integer }
+        quantity:         { type: integer }
+        unitPrice:        { type: number }
+        productId:        { type: integer }
+        productName:      { type: string }
+        productImage:     { type: ["string", "null"] }
+        variantName:      { type: string }
+        variantSku:       { type: string }
+        stockCount:       { type: integer }
+      required: [id, productVariantId, quantity, unitPrice, productId, productName, variantName, variantSku, stockCount]
+
+    Cart:
+      type: object
+      properties:
+        sessionId: { type: string }
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        total:     { type: number }
+        itemCount: { type: integer }
+      required: [sessionId, items, total, itemCount]
+
+    CartItemInput:
+      type: object
+      properties:
+        productVariantId: { type: integer }
+        quantity:         { type: integer }
+      required: [productVariantId, quantity]
+
+    CartItemPatch:
+      type: object
+      properties:
+        quantity: { type: integer }
+      required: [quantity]
+
+    Address:
+      type: object
+      properties:
+        id:             { type: integer }
+        digitalAddress: { type: string }
+        notes:          { type: ["string", "null"] }
+        lat:            { type: ["number", "null"] }
+        lng:            { type: ["number", "null"] }
+        userId:         { type: ["string", "null"] }
+      required: [id, digitalAddress]
+
+    AddressInput:
+      type: object
+      properties:
+        digitalAddress: { type: string }
+        notes:          { type: string }
+        lat:            { type: number }
+        lng:            { type: number }
+        userId:         { type: string }
+      required: [digitalAddress]
+
+    OrderItem:
+      type: object
+      properties:
+        id:               { type: integer }
+        productVariantId: { type: integer }
+        quantity:         { type: integer }
+        unitPrice:        { type: number }
+        productName:      { type: string }
+        productImage:     { type: ["string", "null"] }
+        variantName:      { type: string }
+      required: [id, productVariantId, quantity, unitPrice, productName, variantName]
+
+    Order:
+      type: object
+      properties:
+        id:            { type: integer }
+        status:        { type: string }
+        paymentMethod: { type: string }
+        paymentStatus: { type: string }
+        total:         { type: number }
+        userId:        { type: ["string", "null"] }
+        createdAt:     { type: string }
+        address:
+          $ref: "#/components/schemas/Address"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+      required: [id, status, paymentMethod, paymentStatus, total, createdAt, items]
+
+    OrderInput:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        address:
+          $ref: "#/components/schemas/AddressInput"
+        paymentMethod:
+          type: string
+          enum: [paystack, pay_on_delivery]
+        userId:
+          type: string
+      required: [sessionId, address, paymentMethod]
+
+    PaystackInitInput:
+      type: object
+      properties:
+        orderId: { type: integer }
+        email:   { type: string }
+      required: [orderId, email]
+
+    PaystackAuthResponse:
+      type: object
+      properties:
+        authorizationUrl: { type: string }
+        accessCode:       { type: string }
+        reference:        { type: string }
+      required: [authorizationUrl, accessCode, reference]
+
+    PaystackVerifyInput:
+      type: object
+      properties:
+        reference: { type: string }
+        orderId:   { type: integer }
+      required: [reference, orderId]
+
+    PaymentVerifyResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        status:  { type: string }
+        orderId: { type: integer }
+      required: [success, status, orderId]
+
+    WebhookPayload:
+      type: object
+      properties:
+        event: { type: string }
+        data:
+          type: object
+          properties:
+            reference: { type: ["string", "null"] }
+            status:    { type: ["string", "null"] }
+            amount:    { type: ["number", "null"] }
+      required: [event]

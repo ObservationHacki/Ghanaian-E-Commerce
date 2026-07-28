@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Kumasi Store"
+version = "1.0.0"
+id = "artifacts/store"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24964
+
+[services.development]
+run = "pnpm --filter @workspace/store run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/store", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/store/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24964"
+BASE_PATH = "/"
