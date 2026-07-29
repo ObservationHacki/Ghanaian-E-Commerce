@@ -162,6 +162,150 @@ export function Home() {
         </div>
       </section>
 
+      {/* Upgrade Section */}
+      <section className="py-20 md:py-28" style={{ background: '#F5F5F7' }}>
+        <div className="container mx-auto px-4 md:px-8 flex flex-col items-center text-center">
+
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.55 }}
+            className="flex items-center gap-3 mb-4"
+          >
+            {/* Inline brand icon */}
+            <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-blue-600 shadow-md">
+              <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                <path d="M2 17l10 5 10-5" />
+                <path d="M2 12l10 5 10-5" />
+              </svg>
+            </span>
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight text-gray-900" style={{ fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif' }}>
+              Upgrade
+            </h2>
+          </motion.div>
+
+          {/* Subtitle */}
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.55, delay: 0.08 }}
+            className="text-base md:text-lg text-gray-500 font-medium mb-8 tracking-wide"
+          >
+            Love it. Lease it. Upgrade it.
+          </motion.p>
+
+          {/* CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.14 }}
+          >
+            <Link href="/shop?category=phones">
+              <button className="px-8 py-3 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm tracking-wide transition-colors shadow-md hover:shadow-lg">
+                Learn more
+              </button>
+            </Link>
+          </motion.div>
+
+          {/* Phone + Fan Graphic */}
+          <motion.div
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
+            className="relative mt-14 flex items-center justify-center w-full max-w-md mx-auto"
+            style={{ height: '480px' }}
+          >
+            {/* Multi-colored petal fan — centered behind phone */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
+              <svg
+                viewBox="0 0 400 400"
+                className="w-[380px] h-[380px] md:w-[440px] md:h-[440px]"
+                style={{ filter: 'blur(0px)' }}
+              >
+                <defs>
+                  {/* Petal gradients */}
+                  <radialGradient id="p1" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor="#f472b6" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.2" />
+                  </radialGradient>
+                  <radialGradient id="p2" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor="#f87171" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0.2" />
+                  </radialGradient>
+                  <radialGradient id="p3" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor="#c084fc" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#a855f7" stopOpacity="0.2" />
+                  </radialGradient>
+                  <radialGradient id="p4" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor="#60a5fa" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.2" />
+                  </radialGradient>
+                  <radialGradient id="p5" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor="#fb923c" stopOpacity="0.85" />
+                    <stop offset="100%" stopColor="#f97316" stopOpacity="0.15" />
+                  </radialGradient>
+                  <radialGradient id="p6" cx="50%" cy="0%" r="100%">
+                    <stop offset="0%" stopColor="#34d399" stopOpacity="0.85" />
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.15" />
+                  </radialGradient>
+                  <filter id="petalBlur">
+                    <feGaussianBlur stdDeviation="6" />
+                  </filter>
+                </defs>
+
+                {/* 6 petals evenly rotated around center (200,200), each is an ellipse stretched upward */}
+                {[
+                  { grad: 'p1', rot: 0 },
+                  { grad: 'p2', rot: 60 },
+                  { grad: 'p3', rot: 120 },
+                  { grad: 'p4', rot: 180 },
+                  { grad: 'p5', rot: 240 },
+                  { grad: 'p6', rot: 300 },
+                ].map(({ grad, rot }) => (
+                  <ellipse
+                    key={rot}
+                    cx="200"
+                    cy="200"
+                    rx="58"
+                    ry="150"
+                    fill={`url(#${grad})`}
+                    filter="url(#petalBlur)"
+                    transform={`rotate(${rot} 200 200) translate(0 -70)`}
+                    opacity="0.82"
+                  />
+                ))}
+
+                {/* Soft central glow */}
+                <circle cx="200" cy="200" r="80" fill="white" opacity="0.45" filter="url(#petalBlur)" />
+              </svg>
+            </div>
+
+            {/* Phone image — floating above the fan */}
+            <div
+              className="relative z-10 select-none"
+              style={{
+                filter: 'drop-shadow(0 32px 48px rgba(0,0,0,0.22)) drop-shadow(0 8px 16px rgba(0,0,0,0.14))',
+              }}
+            >
+              <img
+                src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=320&q=90&auto=format&fit=crop"
+                alt="Premium smartphone"
+                className="w-[160px] md:w-[190px] object-contain rounded-[2rem]"
+                draggable={false}
+                style={{ imageRendering: 'crisp-edges' }}
+              />
+            </div>
+          </motion.div>
+
+        </div>
+      </section>
+
       {/* Trust Grid */}
       <section className="py-24 bg-background border-t">
         <div className="container mx-auto px-4 md:px-8">
