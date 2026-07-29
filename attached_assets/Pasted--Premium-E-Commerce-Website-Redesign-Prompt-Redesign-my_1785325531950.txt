@@ -1,0 +1,418 @@
+# Premium E-Commerce Website Redesign Prompt
+
+Redesign my existing e-commerce website from the ground up. The current functionality is good, but the overall design feels outdated and lacks the premium, modern experience I'm aiming for. Do **not** simply refresh the UI—rethink the entire layout, visual hierarchy, spacing, and user experience while keeping the existing functionality intact.
+
+## Overall Vision
+
+Create a website that combines:
+
+* **Apple's premium, minimalist aesthetic** (clean layouts, generous white space, bold typography, elegant product presentation, subtle animations).
+* **Amazon's powerful shopping experience** (fast product discovery, intuitive navigation, advanced search, clear categories, personalized recommendations, and frictionless purchasing).
+* A **modern Ghana-first shopping experience** that feels trustworthy, fast, and professional while appealing to customers buying a wide range of products.
+
+The final result should feel like a high-end retail brand rather than a generic marketplace.
+
+---
+
+# Design Principles
+
+* Premium and elegant.
+* Minimal but information-rich.
+* Large spacing and excellent visual hierarchy.
+* Responsive across desktop, tablet, and mobile.
+* Fast and intuitive navigation.
+* Accessibility-first.
+* Modern micro-interactions.
+* Smooth transitions and animations.
+* Consistent design language across every page.
+
+Avoid clutter, oversized borders, excessive shadows, or unnecessary gradients.
+
+---
+
+# Color Palette
+
+Use a clean premium palette inspired by Apple.
+
+Background:
+
+* White (#FFFFFF)
+
+Secondary Background:
+
+* Light Gray (#F5F5F7)
+
+Primary Text:
+
+* Near Black (#1D1D1F)
+
+Borders:
+
+* Soft Gray
+
+Accent Color:
+Use my brand color sparingly for CTAs, links, highlights, and interactive states.
+
+The interface should never feel overly colorful.
+
+---
+
+# Typography
+
+Large modern headings.
+
+Suggested hierarchy:
+
+* Hero: 56–72px
+* Section Titles: 36–48px
+* Product Titles: 18–22px
+* Body: 16px
+* Captions: 13–14px
+
+Use generous spacing between headings and content.
+
+---
+
+# Homepage Layout
+
+Redesign the homepage with the following structure:
+
+1. Announcement Bar
+2. Sticky Navigation
+3. Hero Section
+4. Featured Categories
+5. New Arrivals
+6. Best Sellers
+7. Flash Deals
+8. Lifestyle Collections
+9. Featured Brands
+10. Customer Reviews
+11. Newsletter
+12. Footer
+
+Each section should have ample spacing and feel distinct.
+
+---
+
+# Navigation
+
+Create a modern sticky navigation bar.
+
+Include:
+
+* Logo
+* Large Search Bar
+* Categories
+* Home
+* Shop
+* Deals
+* New Arrivals
+* Wishlist
+* Account
+* Cart
+
+The search bar should be one of the most prominent elements on desktop.
+
+On mobile:
+
+* Hamburger Menu
+* Logo
+* Search
+* Cart
+
+Navigation should remain clean and never overcrowded.
+
+---
+
+# Hero Section
+
+Design a premium hero inspired by Apple.
+
+Requirements:
+
+* Large lifestyle photography.
+* Minimal text.
+* Strong headline.
+* Short supporting copy.
+* Primary CTA.
+* Secondary CTA.
+
+Example layout:
+
+Headline
+
+Subheading
+
+Shop Now
+
+Explore Categories
+
+Large product/lifestyle image
+
+Keep the hero spacious and visually striking.
+
+---
+
+# Search Experience
+
+Take inspiration from Amazon.
+
+Include:
+
+* Large search bar.
+* Smart autocomplete.
+* Popular searches.
+* Search suggestions.
+* Recent searches.
+* Trending products.
+
+Search should be extremely fast and easy to access.
+
+---
+
+# Categories Section
+
+Use large rounded category cards.
+
+Include icons or illustrations.
+
+Examples:
+
+* Electronics
+* Fashion
+* Home
+* Beauty
+* Gaming
+* Kitchen
+* Accessories
+* Kids
+
+Cards should animate subtly on hover.
+
+---
+
+# Product Cards
+
+Design premium product cards.
+
+Each card should include:
+
+* Large product image
+* Product title
+* Rating
+* Price
+* Discount badge (if applicable)
+* Delivery information
+* Quick Add to Cart
+* Wishlist
+* Hover animation
+
+Cards should feel premium rather than crowded.
+
+---
+
+# Collections
+
+Create editorial-style collection banners.
+
+Examples:
+
+* Gaming Essentials
+* Smart Home
+* Summer Collection
+* Work From Home
+* New Tech
+* Fashion Picks
+
+Use large imagery with clean typography.
+
+---
+
+# Flash Sale Section
+
+Create a dedicated promotional section featuring:
+
+* Countdown Timer
+* Promotional Banner
+* Discount Percentage
+* Shop Now button
+
+This section should stand out without overwhelming the page.
+
+---
+
+# Brands Section
+
+Display featured brands using clean logos.
+
+Examples:
+
+* Apple
+* Samsung
+* Sony
+* HP
+* Nike
+* Xiaomi
+
+Use a clean horizontal carousel or responsive grid.
+
+---
+
+# Trust Section
+
+Since customer trust is important in Ghana, prominently showcase:
+
+* Nationwide Delivery
+* Secure Payments
+* Verified Products
+* Easy Returns
+* Customer Support
+* Fast Shipping
+
+These should be displayed using clean icons.
+
+---
+
+# Product Detail Page
+
+Redesign the product page with:
+
+* Large image gallery
+* Zoom functionality
+* Product information
+* Ratings
+* Variants
+* Quantity selector
+* Add to Cart
+* Buy Now
+* Shipping information
+* Specifications
+* Reviews
+* Related Products
+* Recently Viewed
+
+Everything should feel premium and easy to scan.
+
+---
+
+# Shopping Cart
+
+Modern cart featuring:
+
+* Product preview
+* Quantity controls
+* Save for Later
+* Remove
+* Promo code
+* Shipping estimate
+* Order summary
+* Checkout CTA
+
+---
+
+# Checkout
+
+Keep checkout extremely simple.
+
+Three-step process:
+
+1. Shipping
+2. Payment
+3. Confirmation
+
+Support:
+
+* Mobile Money
+* Debit/Credit Cards
+* Bank Transfer (optional)
+
+Minimize friction throughout the checkout process.
+
+---
+
+# Ghana-Specific Features
+
+Since this store primarily serves customers in Ghana, integrate local features naturally throughout the experience:
+
+* Mobile Money payments (MTN MoMo, Telecel Cash, AirtelTigo Money where supported)
+* Delivery estimates by region
+* Nationwide shipping indicators
+* Local currency (GHS)
+* Trust badges
+* Trending in Ghana
+* Fast-selling products
+* Recently viewed items
+* Popular categories in Ghana
+* WhatsApp customer support
+* Delivery tracking
+* "Ships from Ghana" labels where applicable
+
+These should enhance the experience without making the site feel cluttered.
+
+---
+
+# Footer
+
+Create a premium multi-column footer containing:
+
+* Shop
+* Categories
+* Customer Service
+* Returns
+* FAQ
+* About
+* Contact
+* Privacy Policy
+* Terms
+* Social Media
+* Newsletter Signup
+
+---
+
+# Animations
+
+Use tasteful micro-interactions only.
+
+Examples:
+
+* Fade-in sections
+* Smooth scrolling
+* Button hover effects
+* Card lift on hover
+* Image zoom on hover
+* Page transitions
+* Loading skeletons
+* Sticky navigation
+* Smooth cart updates
+
+Animations should feel refined, never distracting.
+
+---
+
+# Responsive Design
+
+Optimize every page for:
+
+* Mobile
+* Tablet
+* Desktop
+* Large Desktop
+
+The mobile experience should be thoughtfully redesigned rather than simply scaled down.
+
+---
+
+# Technical Requirements
+
+* Maintain all existing functionality.
+* Prioritize performance and Core Web Vitals.
+* Use reusable UI components.
+* Ensure accessibility (WCAG best practices).
+* Keep layouts modular and scalable.
+* Optimize images and lazy-load where appropriate.
+
+---
+
+# Overall Goal
+
+Create a premium e-commerce platform that blends Apple's elegant visual design with Amazon's exceptional shopping experience while feeling localized for Ghanaian customers. The redesign should immediately communicate trust, quality, and professionalism, encourage product discovery, simplify purchasing, and leave users with the impression of shopping on a world-class online retail platform.
