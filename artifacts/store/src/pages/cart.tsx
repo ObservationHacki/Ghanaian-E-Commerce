@@ -1,4 +1,4 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { 
   useGetCart, 
@@ -8,15 +8,18 @@ import {
 } from '@workspace/api-client-react';
 import { getCartSessionId } from '@/lib/cart';
 import { formatCurrency } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, ArrowRight, LogIn } from 'lucide-react';
 
 export function Cart() {
   const sessionId = getCartSessionId();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const [, setLocation] = useLocation();
 
   const { data: cart, isLoading } = useGetCart(sessionId, { 
     query: { enabled: !!sessionId } 
@@ -174,11 +177,17 @@ export function Cart() {
               </div>
               <p className="text-xs text-muted-foreground mb-8 text-right">All prices include VAT</p>
 
-              <Link href="/checkout">
-                <Button size="lg" className="w-full h-14 rounded-full font-bold text-base hover-elevate">
-                  Proceed to Checkout <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="w-full h-14 rounded-full font-bold text-base hover-elevate"
+                onClick={() => user ? setLocation('/checkout') : setLocation('/auth/login?redirect=/checkout')}
+              >
+                {user ? (
+                  <>Proceed to Checkout <ArrowRight className="w-5 h-5 ml-2" /></>
+                ) : (
+                  <>Sign in to Checkout <LogIn className="w-5 h-5 ml-2" /></>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </div>

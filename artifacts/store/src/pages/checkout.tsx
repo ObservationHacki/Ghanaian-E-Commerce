@@ -38,6 +38,12 @@ export function Checkout() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const sessionId = getCartSessionId();
+
+  // Auth guard — redirect to login, then come back here
+  if (!user) {
+    setLocation('/auth/login?redirect=/checkout');
+    return null;
+  }
   const { toast } = useToast();
 
   const { data: cart } = useGetCart(sessionId, { query: { enabled: !!sessionId } });

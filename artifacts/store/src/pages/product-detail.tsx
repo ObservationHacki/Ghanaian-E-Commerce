@@ -3,6 +3,7 @@ import { useRoute, useLocation, Link } from 'wouter';
 import { useGetProduct, useListRelatedProducts, useAddCartItem } from '@workspace/api-client-react';
 import { getCartSessionId } from '@/lib/cart';
 import { formatCurrency } from '@/lib/utils';
+import { useAuth } from '@/lib/auth-context';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
@@ -15,6 +16,7 @@ export function ProductDetail() {
   const [, setLocation] = useLocation();
   const id = params?.id ? Number(params.id) : 0;
   const sessionId = getCartSessionId();
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const { data: product, isLoading } = useGetProduct(id, { query: { enabled: !!id } });
@@ -52,6 +54,10 @@ export function ProductDetail() {
 
   const handleBuyNow = () => {
     if (!selectedVariantId) return;
+    if (!user) {
+      setLocation('/auth/login?redirect=/checkout');
+      return;
+    }
     addCartItem.mutate(
       { sessionId, data: { productVariantId: selectedVariantId, quantity: 1 } },
       {

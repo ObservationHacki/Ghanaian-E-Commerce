@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Link, useLocation } from 'wouter';
+import { Link, useLocation, useSearch } from 'wouter';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ArrowRight } from 'lucide-react';
+import { Loader2, ArrowRight, ShoppingBag } from 'lucide-react';
 
 export function Login() {
   const [, setLocation] = useLocation();
+  const search = useSearch();
+  const redirect = new URLSearchParams(search).get('redirect') || '/';
+  const comingFromCheckout = redirect === '/checkout';
   const { toast } = useToast();
 
   const [email, setEmail] = useState('');
@@ -28,16 +31,26 @@ export function Login() {
         variant: 'destructive',
       });
     } else {
-      setLocation('/');
+      setLocation(redirect);
     }
   };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
+        {comingFromCheckout && (
+          <div className="flex items-center gap-3 mb-6 px-4 py-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900">
+            <ShoppingBag className="h-5 w-5 text-blue-600 shrink-0" />
+            <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+              Sign in to complete your purchase
+            </p>
+          </div>
+        )}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-black tracking-tighter mb-2">KUMASI</h1>
-          <p className="text-muted-foreground">Sign in to your account</p>
+          <p className="text-muted-foreground">
+            {comingFromCheckout ? 'Sign in to place your order' : 'Sign in to your account'}
+          </p>
         </div>
 
         <Card className="rounded-3xl border-none shadow-md">
