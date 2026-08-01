@@ -11,6 +11,18 @@ out-tsc
 # dependencies
 node_modules
 
+# local environment
+.env
+.env.local
+!.env.example
+
+# generated / local catalog workbooks
+catalog-template.xlsx
+catalog*.xlsx
+laptop_pricelist_GHS.xlsx
+tmp-products-img.json
+.vercel
+
 # IDEs and editors
 /.idea
 .project

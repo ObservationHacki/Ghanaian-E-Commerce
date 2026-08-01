@@ -6,6 +6,27 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
+// Honor X-Forwarded-For from the hosting reverse proxy (needed for Turnstile remoteip).
+app.set("trust proxy", 1);
+
+function parseCorsOrigins(): string[] | true {
+  const raw = process.env.CORS_ORIGINS?.trim();
+  if (!raw || raw === "*") {
+    // Dev default: reflect any origin. Set CORS_ORIGINS in production.
+    if (process.env.NODE_ENV === "production") {
+      logger.warn("CORS_ORIGINS unset in production — denying cross-origin browser requests");
+      return [];
+    }
+    return true;
+  }
+  return raw
+    .split(",")
+    .map((o) => o.trim())
+    .filter(Boolean);
+}
+
+const corsOrigins = parseCorsOrigins();
+
 app.use(
   pinoHttp({
     logger,
@@ -25,7 +46,13 @@ app.use(
     },
   }),
 );
-app.use(cors());
+
+app.use(
+  cors({
+    origin: corsOrigins,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

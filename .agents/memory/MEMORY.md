@@ -1,1 +1,2 @@
 - [Kumasi Store stack](kumasi-store-stack.md) — key decisions: react-vite frontend, Express 5 + Drizzle + Replit PostgreSQL, Supabase auth client-only, Paystack test mode, react-leaflet maps.
+- [Storefront design system](store-design-system.md) — token names (Ghana-green accent, ink/surface/hairline ramp), fluid type scale, shared commerce components, quick-add and cart-invalidation gotchas.

@@ -3,7 +3,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+    // exceljs is CommonJS and only has a default export
+    "esModuleInterop": true
   },
   "include": ["src"]
 }

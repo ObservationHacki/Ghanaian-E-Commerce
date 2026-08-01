@@ -1,0 +1,9 @@
+.git
+.agents
+attached_assets
+**/node_modules
+**/.env
+**/.env.*
+!.env.example
+artifacts/mockup-sandbox
+lib/db/drizzle

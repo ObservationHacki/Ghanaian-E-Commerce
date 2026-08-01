@@ -1,23 +1,52 @@
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
+import { Link } from 'wouter';
+import { Button } from '@/components/ui/button';
 
-export default function NotFound() {
+const SUGGESTIONS = [
+  { label: 'Shop all products', href: '/shop' },
+  { label: 'New arrivals', href: '/shop?sort=newest' },
+  { label: 'Flash deals', href: '/shop?deals=1' },
+  { label: 'Help centre', href: '/info/faq' },
+];
+
+export function NotFound() {
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
-      <Card className="w-full max-w-md mx-4">
-        <CardContent className="pt-6">
-          <div className="flex mb-4 gap-2">
-            <AlertCircle className="h-8 w-8 text-red-500" />
-            <h1 className="text-2xl font-bold text-gray-900">
-              404 Page Not Found
-            </h1>
-          </div>
+    <div className="container-narrow flex flex-col items-center py-28 text-center md:py-40">
+      <p className="text-caption font-semibold uppercase tracking-[0.18em] text-accent-ink">
+        Error 404
+      </p>
+      <h1 className="mt-4 text-headline text-foreground">This page has moved on</h1>
+      <p className="mt-5 max-w-md text-lede text-ink-muted text-pretty">
+        The link may be old or the product may no longer be listed. Let's get you back to
+        shopping.
+      </p>
 
-          <p className="mt-4 text-sm text-gray-600">
-            Did you forget to add the page to the router?
-          </p>
-        </CardContent>
-      </Card>
+      <div className="mt-10 flex flex-col gap-3 sm:flex-row">
+        <Button variant="accent" size="pill-lg" asChild>
+          <Link href="/shop">Browse the store</Link>
+        </Button>
+        <Button variant="hairline" size="pill-lg" asChild>
+          <Link href="/">Back to home</Link>
+        </Button>
+      </div>
+
+      <div className="mt-14 w-full border-t border-hairline pt-10">
+        <p className="text-caption font-semibold uppercase tracking-[0.14em] text-ink-subtle">
+          Popular destinations
+        </p>
+        <div className="mt-5 flex flex-wrap justify-center gap-2.5">
+          {SUGGESTIONS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-full border border-hairline px-5 py-2.5 text-[14px] font-medium text-foreground transition-colors hover:bg-surface-sunken"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
+
+export default NotFound;

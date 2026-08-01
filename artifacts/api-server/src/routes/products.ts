@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import {
   productsTable,
   productVariantsTable,
+  productImagesTable,
   categoriesTable,
   brandsTable,
 } from "@workspace/db";
@@ -21,20 +22,39 @@ import {
 
 const router: IRouter = Router();
 
-function buildProductSummary(
-  p: typeof productsTable.$inferSelect & {
-    categoryName: string | null;
-    brandName: string | null;
-    variantCount: number;
-    minPrice: string | null;
-  }
-) {
+type ImageAsset = {
+  primaryImage: string;
+  thumbnail: string;
+  largePath: string;
+  mediumPath: string;
+  width: number;
+  height: number;
+  verified: boolean;
+};
+
+// Mirrors the columns the list queries below actually project, rather than the
+// whole table row — they select a joined subset, not $inferSelect.
+type ProductSummaryRow = {
+  id: number;
+  name: string;
+  description: string;
+  basePrice: string;
+  images: string[];
+  categoryId: number | null;
+  categoryName: string | null;
+  brandId: number | null;
+  brandName: string | null;
+  variantCount: number;
+};
+
+function buildProductSummary(p: ProductSummaryRow, imageAssets: ImageAsset[] = []) {
   return {
     id: p.id,
     name: p.name,
     description: p.description,
     basePrice: parseFloat(p.basePrice),
     images: p.images,
+    imageAssets,
     categoryId: p.categoryId,
     categoryName: p.categoryName,
     brandId: p.brandId,
@@ -42,6 +62,46 @@ function buildProductSummary(
     inStock: p.variantCount > 0,
     variantCount: p.variantCount,
   };
+}
+
+async function loadPrimaryImageAssets(
+  productIds: number[],
+): Promise<Map<number, ImageAsset[]>> {
+  const map = new Map<number, ImageAsset[]>();
+  if (!productIds.length) return map;
+  const rows = await db
+    .select({
+      productId: productImagesTable.productId,
+      primaryImage: productImagesTable.primaryImage,
+      thumbnail: productImagesTable.thumbnail,
+      largePath: productImagesTable.largePath,
+      mediumPath: productImagesTable.mediumPath,
+      width: productImagesTable.width,
+      height: productImagesTable.height,
+      verified: productImagesTable.verified,
+    })
+    .from(productImagesTable)
+    .where(
+      and(
+        inArray(productImagesTable.productId, productIds),
+        eq(productImagesTable.isPrimary, true),
+      ),
+    );
+  for (const row of rows) {
+    const asset: ImageAsset = {
+      primaryImage: row.primaryImage,
+      thumbnail: row.thumbnail,
+      largePath: row.largePath,
+      mediumPath: row.mediumPath,
+      width: row.width,
+      height: row.height,
+      verified: row.verified,
+    };
+    const list = map.get(row.productId) || [];
+    list.push(asset);
+    map.set(row.productId, list);
+  }
+  return map;
 }
 
 // GET /products/featured — must be before /products/:id
@@ -71,7 +131,7 @@ router.get("/products/featured", async (_req, res): Promise<void> => {
         gte(productVariantsTable.stockCount, 1)
       )
     )
-    .where(eq(productsTable.featured, true))
+    .where(and(eq(productsTable.featured, true), eq(productsTable.published, true)))
     .groupBy(
       productsTable.id,
       categoriesTable.name,
@@ -80,7 +140,8 @@ router.get("/products/featured", async (_req, res): Promise<void> => {
     .orderBy(desc(productsTable.createdAt))
     .limit(12);
 
-  res.json(rows.map(buildProductSummary));
+  const assets = await loadPrimaryImageAssets(rows.map((r) => r.id));
+  res.json(rows.map((r) => buildProductSummary(r, assets.get(r.id) || [])));
 });
 
 // GET /products
@@ -100,7 +161,7 @@ router.get("/products", async (req, res): Promise<void> => {
   const pageSize = Math.min(100, parseInt(limit, 10) || 20);
   const offset = (pageNum - 1) * pageSize;
 
-  const conditions = [];
+  const conditions = [eq(productsTable.published, true)];
   if (category) conditions.push(eq(categoriesTable.slug, category));
   if (brand) conditions.push(eq(brandsTable.slug, brand));
   if (minPrice) conditions.push(gte(productsTable.basePrice, minPrice));
@@ -149,8 +210,9 @@ router.get("/products", async (req, res): Promise<void> => {
 
   const total = totalRows[0]?.total ?? 0;
 
+  const assets = await loadPrimaryImageAssets(products.map((p) => p.id));
   res.json({
-    products: products.map(buildProductSummary),
+    products: products.map((p) => buildProductSummary(p, assets.get(p.id) || [])),
     total,
     page: pageNum,
     totalPages: Math.ceil(total / pageSize),
@@ -182,7 +244,7 @@ router.get("/products/:id", async (req, res): Promise<void> => {
     .from(productsTable)
     .leftJoin(categoriesTable, eq(categoriesTable.id, productsTable.categoryId))
     .leftJoin(brandsTable, eq(brandsTable.id, productsTable.brandId))
-    .where(eq(productsTable.id, id))
+    .where(and(eq(productsTable.id, id), eq(productsTable.published, true)))
     .limit(1);
 
   if (!productRow) {
@@ -190,11 +252,14 @@ router.get("/products/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const variants = await db
-    .select()
-    .from(productVariantsTable)
-    .where(eq(productVariantsTable.productId, id))
-    .orderBy(productVariantsTable.price);
+  const [variants, imageAssetsMap] = await Promise.all([
+    db
+      .select()
+      .from(productVariantsTable)
+      .where(eq(productVariantsTable.productId, id))
+      .orderBy(productVariantsTable.price),
+    loadPrimaryImageAssets([id]),
+  ]);
 
   res.json({
     id: productRow.id,
@@ -202,6 +267,7 @@ router.get("/products/:id", async (req, res): Promise<void> => {
     description: productRow.description,
     basePrice: parseFloat(productRow.basePrice),
     images: productRow.images,
+    imageAssets: imageAssetsMap.get(id) || [],
     categoryId: productRow.categoryId,
     categoryName: productRow.categoryName,
     brandId: productRow.brandId,
@@ -256,13 +322,15 @@ router.get("/products/:id/related", async (req, res): Promise<void> => {
     .where(
       and(
         product.categoryId ? eq(productsTable.categoryId, product.categoryId) : sql`true`,
-        sql`${productsTable.id} != ${id}`
+        sql`${productsTable.id} != ${id}`,
+        eq(productsTable.published, true),
       )
     )
     .groupBy(productsTable.id, categoriesTable.name, brandsTable.name)
     .limit(6);
 
-  res.json(related.map(buildProductSummary));
+  const assets = await loadPrimaryImageAssets(related.map((r) => r.id));
+  res.json(related.map((r) => buildProductSummary(r, assets.get(r.id) || [])));
 });
 
 export default router;

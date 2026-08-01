@@ -6,7 +6,10 @@ import productsRouter from "./products";
 import cartRouter from "./cart";
 import ordersRouter from "./orders";
 import addressesRouter from "./addresses";
-import paymentsRouter from "./payments";
+import contentPublicRouter from "./content-public";
+import storeConfigRouter from "./store-config";
+import internalRouter from "./internal";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -17,6 +20,9 @@ router.use(productsRouter);
 router.use(cartRouter);
 router.use(ordersRouter);
 router.use(addressesRouter);
-router.use(paymentsRouter);
+router.use(contentPublicRouter);
+router.use(storeConfigRouter);
+router.use(internalRouter);
+router.use("/admin", adminRouter);
 
 export default router;

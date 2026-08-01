@@ -1,14 +1,22 @@
-import { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { useLocation } from 'wouter';
 import { AnnouncementBar } from './announcement-bar';
 import { Navbar } from './navbar';
 import { Footer } from './footer';
 
 export function Layout({ children }: { children: ReactNode }) {
+  const [location] = useLocation();
+
+  // Wouter keeps scroll position between routes; a store should start at the top.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior });
+  }, [location]);
+
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-white dark:bg-[#1D1D1F] text-[#1D1D1F] dark:text-white selection:bg-blue-600 selection:text-white">
+    <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
       <AnnouncementBar />
       <Navbar />
-      <main className="flex-1 flex flex-col">
+      <main id="main" className="flex flex-1 flex-col">
         {children}
       </main>
       <Footer />

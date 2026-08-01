@@ -1,309 +1,541 @@
+import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useAuth } from '@/lib/auth-context';
-import { useGetCart } from '@workspace/api-client-react';
-import { getCartSessionId } from '@/lib/cart';
 import {
-  ShoppingCart, Search, User, Menu, Moon, Sun, X,
-  Smartphone, Laptop, Headphones, Shirt, Home as HomeIcon,
-  Gamepad, Watch, ChevronRight, Heart,
+  ShoppingBag,
+  Search,
+  User,
+  Menu,
+  Moon,
+  Sun,
+  X,
+  Heart,
+  ChevronDown,
+  ChevronRight,
+  LayoutGrid,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useGetCart, useListCategories } from '@workspace/api-client-react';
+import { useAuth } from '@/lib/auth-context';
+import { getCartSessionId } from '@/lib/cart';
+import { useWishlist } from '@/lib/wishlist';
+import { useTheme } from '@/hooks/use-theme';
+import { getCategoryIcon, FALLBACK_CATEGORIES } from '@/lib/catalog';
+import { cn } from '@/lib/utils';
+import { SearchPanel } from './search-panel';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useEffect, useRef, useState } from 'react';
 
 const NAV_LINKS = [
   { label: 'Home', href: '/' },
-  { label: 'Shop All', href: '/shop' },
-  { label: 'Deals', href: '/shop?sort=price_asc' },
+  { label: 'Shop', href: '/shop' },
+  { label: 'Deals', href: '/shop?deals=1' },
   { label: 'New Arrivals', href: '/shop?sort=newest' },
-  { label: 'Phones', href: '/shop?category=phones' },
-  { label: 'Laptops', href: '/shop?category=laptops' },
-  { label: 'Fashion', href: '/shop?category=fashion' },
 ];
 
-const MOBILE_CATS = [
-  { label: 'Phones', href: '/shop?category=phones', icon: Smartphone },
-  { label: 'Laptops', href: '/shop?category=laptops', icon: Laptop },
-  { label: 'Accessories', href: '/shop?category=accessories', icon: Headphones },
-  { label: 'Gaming', href: '/shop?category=gaming', icon: Gamepad },
-  { label: 'Fashion', href: '/shop?category=fashion', icon: Shirt },
-  { label: 'Smart Home', href: '/shop?category=smart-home', icon: HomeIcon },
-  { label: 'Watches', href: '/shop?category=watches', icon: Watch },
-];
+const MEGA_FEATURE = {
+  title: 'Flash deals end at midnight',
+  copy: 'Up to 40% off across tech and home.',
+  href: '/shop?deals=1',
+  image:
+    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=70',
+};
 
 export function Navbar() {
   const [location, navigate] = useLocation();
   const { user, signOut } = useAuth();
+  const { isDark, toggle: toggleTheme } = useTheme();
+  const { count: wishlistCount } = useWishlist();
+
   const sessionId = getCartSessionId();
-  const { data: cart } = useGetCart(sessionId, { query: { enabled: !!sessionId, queryKey: ['cart', sessionId] } });
+  const { data: cart } = useGetCart(sessionId, {
+    query: { enabled: !!sessionId, queryKey: ['cart', sessionId] },
+  });
   const cartCount = cart?.itemCount || 0;
 
-  const [isDark, setIsDark] = useState(false);
+  const { data: apiCategories } = useListCategories();
+  const categories =
+    apiCategories?.length
+      ? apiCategories.map((c) => ({ name: c.name, slug: c.slug, productCount: c.productCount }))
+      : FALLBACK_CATEGORIES.map((c) => ({ ...c, productCount: undefined }));
+
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
-  const [searchFocused, setSearchFocused] = useState(false);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [megaOpen, setMegaOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const megaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setIsDark(document.documentElement.classList.contains('dark'));
-  }, []);
-
-  // Close mobile on route change
   useEffect(() => {
     setMobileOpen(false);
+    setMobileSearchOpen(false);
+    setMegaOpen(false);
   }, [location]);
 
-  // Lock body scroll when mobile menu open
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [mobileOpen]);
 
-  const toggleTheme = () => {
-    const dark = document.documentElement.classList.toggle('dark');
-    setIsDark(dark);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMegaOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (megaTimer.current) clearTimeout(megaTimer.current);
+    };
+  }, []);
+
+  // Small delay stops the mega menu flickering as the pointer crosses the gap.
+  const openMega = () => {
+    if (megaTimer.current) clearTimeout(megaTimer.current);
+    setMegaOpen(true);
+  };
+  const closeMega = () => {
+    if (megaTimer.current) clearTimeout(megaTimer.current);
+    megaTimer.current = setTimeout(() => setMegaOpen(false), 120);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchValue.trim()) {
-      navigate(`/shop?q=${encodeURIComponent(searchValue.trim())}`);
-      setSearchValue('');
-      searchRef.current?.blur();
-    }
+  const isActive = (href: string) => {
+    const [path] = href.split('?');
+    if (path === '/') return location === '/';
+    return location.startsWith(path);
   };
 
   return (
     <>
-      {/* ── Main header ── */}
-      <header className="sticky top-0 z-40 w-full bg-white/90 dark:bg-[#1D1D1F]/90 backdrop-blur-xl border-b border-gray-200/60 dark:border-white/10">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-foreground focus:px-5 focus:py-2.5 focus:text-sm focus:font-medium focus:text-background"
+      >
+        Skip to content
+      </a>
 
-        {/* ── Row 1: Logo · Search · Icons ── */}
-        <div className="container mx-auto px-4 md:px-8 h-16 flex items-center gap-4">
+      <header
+        className={cn(
+          'sticky top-0 z-40 w-full glass transition-shadow duration-300',
+          scrolled ? 'shadow-[0_1px_0_hsl(var(--hairline)),var(--shadow-sm)]' : 'shadow-[0_1px_0_hsl(var(--hairline))]',
+        )}
+      >
+        {/* ── Primary row ── */}
+        <div className="container-page flex h-16 items-center gap-3 md:h-[4.5rem] md:gap-6">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+            className="-ml-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface-sunken lg:hidden"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
 
-          {/* Logo */}
-          <Link href="/" className="shrink-0 flex items-center gap-1.5 mr-2">
-            <span className="text-xl font-black tracking-tight text-[#1D1D1F] dark:text-white" style={{ fontFamily: 'Inter, -apple-system, sans-serif' }}>
-              KUMASI
+          <Link
+            href="/"
+            className="flex shrink-0 items-center gap-2"
+            aria-label="VBUY home"
+          >
+            <span className="text-[19px] font-semibold tracking-[-0.04em] text-foreground md:text-xl">
+              VBUY
             </span>
-            <span className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white tracking-wider">GH</span>
+            <span className="hidden h-[18px] items-center rounded-md bg-accent px-1.5 text-[10px] font-bold tracking-[0.1em] text-accent-foreground sm:inline-flex">
+              GH
+            </span>
           </Link>
 
-          {/* Search bar – expands on focus */}
-          <form
-            onSubmit={handleSearch}
-            className={`hidden md:flex flex-1 max-w-xl relative transition-all duration-300 ${searchFocused ? 'max-w-2xl' : ''}`}
+          {/* Categories trigger + mega menu */}
+          <div
+            className="relative hidden lg:block"
+            onMouseEnter={openMega}
+            onMouseLeave={closeMega}
           >
-            <div className="relative w-full">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-              <input
-                ref={searchRef}
-                type="search"
-                value={searchValue}
-                onChange={e => setSearchValue(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
-                placeholder="Search products, brands, categories…"
-                className="w-full h-10 pl-10 pr-4 rounded-full bg-gray-100 dark:bg-white/10 border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-white/20 text-sm text-[#1D1D1F] dark:text-white placeholder:text-gray-400 transition-all outline-none"
+            <button
+              type="button"
+              onClick={() => setMegaOpen((v) => !v)}
+              aria-expanded={megaOpen}
+              aria-haspopup="true"
+              className={cn(
+                'flex h-10 items-center gap-2 rounded-full px-4 text-[15px] font-medium transition-colors',
+                megaOpen
+                  ? 'bg-surface-sunken text-foreground'
+                  : 'text-foreground hover:bg-surface-sunken',
+              )}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Categories
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 text-ink-subtle transition-transform duration-300',
+                  megaOpen && 'rotate-180',
+                )}
               />
-            </div>
-          </form>
+            </button>
+          </div>
 
-          {/* Spacer on mobile */}
+          {/* Search — the visual centre of gravity on desktop */}
+          <div className="hidden min-w-0 flex-1 md:block">
+            <SearchPanel className="mx-auto max-w-2xl" />
+          </div>
+
           <div className="flex-1 md:hidden" />
 
-          {/* Right icons */}
-          <div className="flex items-center gap-1">
-            {/* Mobile search */}
-            <Button variant="ghost" size="icon" className="md:hidden h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10" onClick={() => searchRef.current?.focus()}>
-              <Search className="h-5 w-5 text-[#1D1D1F] dark:text-white" />
-            </Button>
+          {/* Utility icons */}
+          <div className="flex shrink-0 items-center gap-0.5 md:gap-1">
+            <button
+              type="button"
+              onClick={() => setMobileSearchOpen((v) => !v)}
+              aria-label="Search"
+              aria-expanded={mobileSearchOpen}
+              className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface-sunken md:hidden"
+            >
+              <Search className="h-5 w-5" />
+            </button>
 
-            {/* Theme toggle */}
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10" data-testid="button-theme-toggle">
-              {isDark ? <Sun className="h-5 w-5 text-white" /> : <Moon className="h-5 w-5 text-[#1D1D1F]" />}
-            </Button>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
+              className="hidden h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface-sunken sm:flex"
+            >
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
 
-            {/* Wishlist (visual) */}
-            <Button variant="ghost" size="icon" className="hidden md:flex h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10">
-              <Heart className="h-5 w-5 text-[#1D1D1F] dark:text-white" />
-            </Button>
-
-            {/* Cart */}
-            <Link href="/cart">
-              <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10" data-testid="button-cart">
-                <ShoppingCart className="h-5 w-5 text-[#1D1D1F] dark:text-white" />
-                {cartCount > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-[9px] font-bold text-white">
-                    {cartCount > 9 ? '9+' : cartCount}
-                  </span>
-                )}
-              </Button>
+            <Link
+              href="/wishlist"
+              aria-label={`Wishlist${wishlistCount ? `, ${wishlistCount} saved` : ''}`}
+              className="relative hidden h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface-sunken sm:flex"
+            >
+              <Heart className="h-5 w-5" />
+              {wishlistCount > 0 && <Pip>{wishlistCount}</Pip>}
             </Link>
 
-            {/* Account */}
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10" data-testid="button-user-menu">
+                  <button
+                    type="button"
+                    aria-label="Account menu"
+                    className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-surface-sunken"
+                    data-testid="button-user-menu"
+                  >
                     <Avatar className="h-7 w-7">
-                      <AvatarFallback className="bg-blue-100 text-blue-700 text-xs font-bold">
+                      <AvatarFallback className="bg-accent-soft text-[11px] font-bold text-accent-ink">
                         {user.email?.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl border-gray-100">
+                <DropdownMenuContent align="end" className="w-60 rounded-2xl p-1.5">
                   <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col gap-0.5">
-                      <p className="text-sm font-semibold text-[#1D1D1F] dark:text-white">My Account</p>
-                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                    </div>
+                    <p className="text-sm font-semibold text-foreground">My account</p>
+                    <p className="truncate text-caption text-ink-muted">{user.email}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild><Link href="/account/orders" className="cursor-pointer">My Orders</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href="/account/addresses" className="cursor-pointer">Saved Addresses</Link></DropdownMenuItem>
-                  <DropdownMenuItem asChild><Link href="/account/settings" className="cursor-pointer">Settings</Link></DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/account/orders" className="cursor-pointer rounded-xl">
+                      My orders
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/wishlist" className="cursor-pointer rounded-xl">
+                      Wishlist
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/account/addresses" className="cursor-pointer rounded-xl">
+                      Saved addresses
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/account/settings" className="cursor-pointer rounded-xl">
+                      Settings
+                    </Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={signOut} className="text-red-500 focus:text-red-500 cursor-pointer">Sign out</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={signOut}
+                    className="cursor-pointer rounded-xl text-destructive focus:text-destructive"
+                  >
+                    Sign out
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link href="/auth/login">
-                <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10" data-testid="button-login">
-                  <User className="h-5 w-5 text-[#1D1D1F] dark:text-white" />
-                </Button>
+              <Link
+                href="/auth/login"
+                aria-label="Sign in"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface-sunken"
+                data-testid="button-login"
+              >
+                <User className="h-5 w-5" />
               </Link>
             )}
 
-            {/* Mobile hamburger */}
-            <Button
-              variant="ghost" size="icon"
-              className="md:hidden h-9 w-9 rounded-full hover:bg-gray-100 dark:hover:bg-white/10"
-              onClick={() => setMobileOpen(true)}
+            <Link
+              href="/cart"
+              aria-label={`Bag${cartCount ? `, ${cartCount} items` : ', empty'}`}
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface-sunken"
+              data-testid="button-cart"
             >
-              <Menu className="h-5 w-5 text-[#1D1D1F] dark:text-white" />
-            </Button>
+              <ShoppingBag className="h-5 w-5" />
+              {cartCount > 0 && <Pip>{cartCount}</Pip>}
+            </Link>
           </div>
         </div>
 
-        {/* ── Row 2: Category nav links (desktop only) ── */}
-        <nav className="hidden md:block border-t border-gray-100 dark:border-white/10">
-          <div className="container mx-auto px-4 md:px-8 h-10 flex items-center gap-1">
-            {NAV_LINKS.map(link => {
-              const active = location === link.href || (link.href !== '/' && location.startsWith(link.href.split('?')[0]));
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-all whitespace-nowrap ${
-                    active
-                      ? 'bg-[#1D1D1F] text-white dark:bg-white dark:text-[#1D1D1F]'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-[#1D1D1F] dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/10'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
+        {/* ── Secondary row: primary nav ── */}
+        <nav
+          aria-label="Primary"
+          className="hidden border-t border-hairline lg:block"
+          onMouseEnter={closeMega}
+        >
+          <div className="container-page flex h-11 items-center gap-1">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(
+                  'rounded-full px-3.5 py-1.5 text-[14px] font-medium transition-colors',
+                  isActive(link.href)
+                    ? 'bg-foreground text-background'
+                    : 'text-ink-muted hover:bg-surface-sunken hover:text-foreground',
+                )}
+              >
+                {link.label}
+              </Link>
+            ))}
+
+            <span className="mx-2 h-4 w-px bg-hairline" aria-hidden="true" />
+
+            {categories.slice(0, 5).map((cat) => (
+              <Link
+                key={cat.slug}
+                href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+                className="rounded-full px-3.5 py-1.5 text-[14px] font-medium text-ink-muted transition-colors hover:bg-surface-sunken hover:text-foreground"
+              >
+                {cat.name}
+              </Link>
+            ))}
           </div>
         </nav>
+
+        {/* ── Mega menu ── */}
+        {megaOpen && (
+          <div
+            className="absolute inset-x-0 top-full hidden border-t border-hairline bg-popover shadow-[var(--shadow-lg)] lg:block"
+            onMouseEnter={openMega}
+            onMouseLeave={closeMega}
+          >
+            <div className="container-page grid grid-cols-[1fr_auto] gap-12 py-10">
+              <div>
+                <p className="mb-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+                  Shop by category
+                </p>
+                <ul className="grid grid-cols-4 gap-x-6 gap-y-1">
+                  {categories.map((cat) => {
+                    const Icon = getCategoryIcon(cat.slug, cat.name);
+                    return (
+                      <li key={cat.slug}>
+                        <Link
+                          href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+                          className="group flex items-center gap-3 rounded-2xl p-2.5 transition-colors hover:bg-surface-sunken"
+                        >
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-sunken text-foreground transition-colors group-hover:bg-accent group-hover:text-accent-foreground">
+                            <Icon className="h-[18px] w-[18px]" strokeWidth={1.6} />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block truncate text-[14px] font-medium text-foreground">
+                              {cat.name}
+                            </span>
+                            {cat.productCount !== undefined && (
+                              <span className="block text-[12px] text-ink-subtle">
+                                {cat.productCount} items
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                <Link
+                  href="/shop"
+                  className="mt-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-accent-ink hover:text-accent"
+                >
+                  Browse everything
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <Link
+                href={MEGA_FEATURE.href}
+                className="group relative flex w-72 flex-col justify-end overflow-hidden rounded-3xl p-6"
+              >
+                <img
+                  src={MEGA_FEATURE.image}
+                  alt=""
+                  loading="lazy"
+                  className="absolute inset-0 -z-20 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 -z-10 bg-gradient-to-t from-black/85 via-black/40 to-transparent"
+                />
+                <span className="relative text-[17px] font-semibold leading-snug text-white">
+                  {MEGA_FEATURE.title}
+                </span>
+                <span className="relative mt-1.5 text-caption text-white/70">
+                  {MEGA_FEATURE.copy}
+                </span>
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* ── Mobile search drawer ── */}
+        {mobileSearchOpen && (
+          <div className="border-t border-hairline bg-background px-5 py-3 md:hidden">
+            <SearchPanel
+              variant="mobile"
+              autoFocus
+              onDismiss={() => setMobileSearchOpen(false)}
+            />
+          </div>
+        )}
       </header>
 
-      {/* ── Mobile drawer ── */}
+      {/* ── Mobile navigation drawer ── */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Menu">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setMobileOpen(false)}
+          />
 
-          {/* Panel */}
-          <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-white dark:bg-[#1D1D1F] flex flex-col shadow-2xl">
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 h-16 border-b border-gray-100 dark:border-white/10 shrink-0">
-              <span className="text-lg font-black tracking-tight text-[#1D1D1F] dark:text-white">KUMASI</span>
-              <button onClick={() => setMobileOpen(false)} className="h-8 w-8 flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-white/10">
-                <X className="h-4 w-4 text-[#1D1D1F] dark:text-white" />
+          <div className="absolute left-0 top-0 flex h-full w-[21rem] max-w-[88vw] flex-col bg-background shadow-[var(--shadow-xl)]">
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-hairline px-5">
+              <span className="text-[19px] font-semibold tracking-[-0.04em] text-foreground">
+                VBUY
+              </span>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Close menu"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-foreground transition-colors hover:bg-surface-sunken"
+              >
+                <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Mobile search */}
-            <form onSubmit={handleSearch} className="px-5 py-4 border-b border-gray-100 dark:border-white/10 shrink-0">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="search"
-                  value={searchValue}
-                  onChange={e => setSearchValue(e.target.value)}
-                  placeholder="Search products…"
-                  className="w-full h-10 pl-9 pr-4 rounded-full bg-gray-100 dark:bg-white/10 text-sm outline-none border border-transparent focus:border-blue-500"
-                />
-              </div>
-            </form>
-
-            {/* Navigation links */}
-            <div className="flex-1 overflow-y-auto">
-              <div className="px-3 py-4">
-                <p className="px-2 mb-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Menu</p>
-                {NAV_LINKS.map(link => (
+            <div className="flex-1 overflow-y-auto overscroll-contain">
+              <div className="p-3">
+                {NAV_LINKS.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium text-[#1D1D1F] dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+                    className="flex items-center justify-between rounded-2xl px-4 py-3.5 text-[16px] font-medium text-foreground transition-colors hover:bg-surface-sunken"
                   >
                     {link.label}
-                    <ChevronRight className="h-4 w-4 text-gray-300" />
+                    <ChevronRight className="h-4 w-4 text-ink-subtle" />
                   </Link>
                 ))}
+                <Link
+                  href="/wishlist"
+                  className="flex items-center justify-between rounded-2xl px-4 py-3.5 text-[16px] font-medium text-foreground transition-colors hover:bg-surface-sunken"
+                >
+                  Wishlist
+                  <span className="flex items-center gap-2 text-ink-subtle">
+                    {wishlistCount > 0 && (
+                      <span className="text-caption font-semibold text-accent-ink">
+                        {wishlistCount}
+                      </span>
+                    )}
+                    <ChevronRight className="h-4 w-4" />
+                  </span>
+                </Link>
               </div>
 
-              <div className="px-3 py-2 border-t border-gray-100 dark:border-white/10">
-                <p className="px-2 mb-2 mt-2 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">Categories</p>
-                {MOBILE_CATS.map(cat => (
-                  <Link
-                    key={cat.href}
-                    href={cat.href}
-                    className="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium text-[#1D1D1F] dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <div className="h-8 w-8 rounded-lg bg-gray-100 dark:bg-white/10 flex items-center justify-center shrink-0">
-                      <cat.icon className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                    </div>
-                    {cat.label}
-                  </Link>
-                ))}
+              <div className="border-t border-hairline p-3">
+                <p className="px-4 pb-2 pt-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-subtle">
+                  Categories
+                </p>
+                {categories.map((cat) => {
+                  const Icon = getCategoryIcon(cat.slug, cat.name);
+                  return (
+                    <Link
+                      key={cat.slug}
+                      href={`/shop?category=${encodeURIComponent(cat.slug)}`}
+                      className="flex items-center gap-3 rounded-2xl px-4 py-3 text-[15px] font-medium text-foreground transition-colors hover:bg-surface-sunken"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-sunken">
+                        <Icon className="h-[18px] w-[18px]" strokeWidth={1.6} />
+                      </span>
+                      {cat.name}
+                    </Link>
+                  );
+                })}
+              </div>
+
+              <div className="border-t border-hairline p-3">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="flex w-full items-center justify-between rounded-2xl px-4 py-3.5 text-[15px] font-medium text-foreground transition-colors hover:bg-surface-sunken"
+                >
+                  {isDark ? 'Light appearance' : 'Dark appearance'}
+                  {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </button>
               </div>
             </div>
 
-            {/* Auth footer */}
-            <div className="px-5 py-5 border-t border-gray-100 dark:border-white/10 shrink-0">
+            <div className="shrink-0 border-t border-hairline p-5">
               {user ? (
                 <div className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-300 font-bold text-sm shrink-0">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent-soft text-[13px] font-bold text-accent-ink">
                     {user.email?.charAt(0).toUpperCase()}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-[#1D1D1F] dark:text-white truncate">My Account</p>
-                    <p className="text-xs text-gray-400 truncate">{user.email}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-caption font-semibold text-foreground">My account</p>
+                    <p className="truncate text-caption text-ink-subtle">{user.email}</p>
                   </div>
-                  <button onClick={signOut} className="text-xs text-red-500 font-medium hover:text-red-600">
+                  <button
+                    type="button"
+                    onClick={signOut}
+                    className="text-caption font-medium text-destructive"
+                  >
                     Sign out
                   </button>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <Link href="/auth/login" className="flex-1">
-                    <button className="w-full h-10 rounded-full border border-gray-200 dark:border-white/20 text-sm font-semibold text-[#1D1D1F] dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition-colors">
-                      Sign in
-                    </button>
-                  </Link>
-                  <Link href="/auth/register" className="flex-1">
-                    <button className="w-full h-10 rounded-full bg-[#1D1D1F] dark:bg-white text-white dark:text-[#1D1D1F] text-sm font-semibold hover:opacity-90 transition-opacity">
-                      Register
-                    </button>
-                  </Link>
+                <div className="flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/auth/login')}
+                    className="h-11 flex-1 rounded-full border border-hairline text-[14px] font-semibold text-foreground transition-colors hover:bg-surface-sunken"
+                  >
+                    Sign in
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/auth/register')}
+                    className="h-11 flex-1 rounded-full bg-accent text-[14px] font-semibold text-accent-foreground transition-colors hover:bg-accent-hover"
+                  >
+                    Register
+                  </button>
                 </div>
               )}
             </div>
@@ -311,5 +543,13 @@ export function Navbar() {
         </div>
       )}
     </>
+  );
+}
+
+function Pip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="absolute right-1 top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold tabular-nums text-accent-foreground ring-2 ring-background">
+      {children}
+    </span>
   );
 }

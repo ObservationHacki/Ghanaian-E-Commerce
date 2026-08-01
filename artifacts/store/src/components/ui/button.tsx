@@ -25,6 +25,10 @@ const buttonVariants = cva(
         // @replit no hover, transparent border
         ghost: 'border border-transparent',
         link: 'text-primary underline-offset-4 hover:underline',
+        accent:
+          'bg-accent text-accent-foreground border border-transparent hover:bg-accent-hover no-default-hover-elevate',
+        hairline:
+          'border border-hairline bg-transparent text-foreground',
       },
       size: {
         // @replit changed sizes
@@ -32,6 +36,10 @@ const buttonVariants = cva(
         sm: 'min-h-8 rounded-md px-3 text-xs',
         lg: 'min-h-10 rounded-md px-8',
         icon: 'h-9 w-9',
+        pill: 'min-h-11 rounded-full px-6 text-[15px]',
+        'pill-lg': 'min-h-[3.25rem] rounded-full px-8 text-base font-semibold',
+        'pill-sm': 'min-h-9 rounded-full px-4 text-[13px]',
+        'icon-lg': 'h-11 w-11 rounded-full',
       },
     },
     defaultVariants: {

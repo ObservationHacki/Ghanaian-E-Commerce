@@ -1,44 +1,33 @@
 import { useState } from 'react';
+import { Link } from 'wouter';
+import { useGetAdminMe } from '@workspace/api-client-react';
 import { useAuth } from '@/lib/auth-context';
 import { supabase } from '@/lib/supabase';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { useToast } from '@/hooks/use-toast';
+import { AccountShell } from '@/components/layout/account-shell';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Link } from 'wouter';
-import { useToast } from '@/hooks/use-toast';
-import { User, Lock, LogOut } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 export function Settings() {
-  const { user, isLoading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
+  const { data: adminMe } = useGetAdminMe({
+    query: { queryKey: ['admin', 'me'], enabled: Boolean(user), retry: false },
+  });
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [saving, setSaving] = useState(false);
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-12 max-w-2xl">
-        <div className="h-10 w-40 bg-secondary animate-pulse rounded-lg mb-8" />
-        <div className="h-64 bg-secondary animate-pulse rounded-3xl" />
-      </div>
-    );
-  }
+  const hasEmailLogin = Boolean(
+    user?.identities?.some((identity) => identity.provider === 'email'),
+  );
+  const signedInWithGoogle = Boolean(
+    user?.identities?.some((identity) => identity.provider === 'google'),
+  );
 
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-24 max-w-2xl text-center">
-        <h1 className="text-2xl font-bold mb-4">Sign in to access settings</h1>
-        <Link href="/auth/login">
-          <Button size="lg" className="rounded-full">Sign In</Button>
-        </Link>
-      </div>
-    );
-  }
-
-  const handlePasswordChange = async (e: React.FormEvent) => {
+  const changePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password !== confirmPassword) {
       toast({ title: 'Passwords do not match', variant: 'destructive' });
@@ -52,122 +41,153 @@ export function Settings() {
     const { error } = await supabase.auth.updateUser({ password });
     setSaving(false);
     if (error) {
-      toast({ title: 'Failed to update password', description: error.message, variant: 'destructive' });
+      toast({
+        title: 'Could not update password',
+        description: error.message,
+        variant: 'destructive',
+      });
     } else {
-      toast({ title: 'Password updated successfully' });
+      toast({ title: 'Password updated' });
       setPassword('');
       setConfirmPassword('');
     }
   };
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-2xl">
-      <h1 className="text-3xl font-bold tracking-tight mb-8">Account Settings</h1>
-
-      {/* Profile Info */}
-      <Card className="rounded-3xl border-none shadow-sm mb-6">
-        <CardContent className="p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-              <User className="w-5 h-5 text-primary" />
+    <AccountShell title="Settings" description="Manage your profile and security">
+      <div className="max-w-2xl space-y-14">
+        {/* Profile */}
+        <section>
+          <h2 className="text-title text-foreground">Profile</h2>
+          <dl className="mt-6 divide-y divide-hairline border-y border-hairline">
+            <div className="grid gap-1 py-5 sm:grid-cols-[10rem_1fr] sm:gap-6">
+              <dt className="text-[14px] text-ink-muted">Email</dt>
+              <dd className="text-[15px] font-medium text-foreground">{user?.email}</dd>
             </div>
-            <h2 className="text-xl font-bold">Profile</h2>
-          </div>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Email</Label>
-              <p className="font-medium">{user.email}</p>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">User ID</Label>
-              <p className="font-mono text-xs text-muted-foreground bg-secondary/50 px-3 py-2 rounded-lg">
-                {user.id}
-              </p>
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wide">Account Created</Label>
-              <p className="text-sm text-muted-foreground">
-                {user.created_at
+            <div className="grid gap-1 py-5 sm:grid-cols-[10rem_1fr] sm:gap-6">
+              <dt className="text-[14px] text-ink-muted">Member since</dt>
+              <dd className="text-[15px] text-foreground">
+                {user?.created_at
                   ? new Date(user.created_at).toLocaleDateString('en-GH', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric',
                     })
                   : '—'}
+              </dd>
+            </div>
+            <div className="grid gap-1 py-5 sm:grid-cols-[10rem_1fr] sm:gap-6">
+              <dt className="text-[14px] text-ink-muted">Sign-in method</dt>
+              <dd className="text-[15px] text-foreground">
+                {[
+                  hasEmailLogin ? 'Email & password' : null,
+                  signedInWithGoogle ? 'Google' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' · ') || '—'}
+              </dd>
+            </div>
+            <div className="grid gap-1 py-5 sm:grid-cols-[10rem_1fr] sm:gap-6">
+              <dt className="text-[14px] text-ink-muted">Account ID</dt>
+              <dd className="break-all font-mono text-[13px] text-ink-subtle">{user?.id}</dd>
+            </div>
+          </dl>
+        </section>
+
+        {/* Password — only when the account has an email/password identity */}
+        <section>
+          <h2 className="text-title text-foreground">
+            {hasEmailLogin ? 'Change password' : 'Password'}
+          </h2>
+          {hasEmailLogin ? (
+            <>
+              <p className="mt-2.5 text-[15px] text-ink-muted">
+                Use at least 6 characters. You'll stay signed in on this device.
+              </p>
+
+              <form onSubmit={changePassword} className="mt-7 space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-[14px] font-medium">
+                    New password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className="h-[3.25rem] max-w-md rounded-2xl border-hairline px-5 text-base"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-[14px] font-medium">
+                    Confirm new password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Repeat new password"
+                    className="h-[3.25rem] max-w-md rounded-2xl border-hairline px-5 text-base"
+                    required
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-7 text-[15px] font-semibold text-accent-foreground transition-colors hover:bg-accent-hover disabled:opacity-50"
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {saving ? 'Updating…' : 'Update password'}
+                </button>
+              </form>
+            </>
+          ) : (
+            <p className="mt-2.5 text-[15px] text-ink-muted">
+              You sign in with Google, so there’s no password to change here. Manage your Google
+              account security instead.
+            </p>
+          )}
+        </section>
+
+        {adminMe ? (
+          <section>
+            <h2 className="text-title text-foreground">Operations</h2>
+            <p className="mt-2.5 text-[15px] text-ink-muted">
+              You have administrator access for this store.
+            </p>
+            <Link
+              href="/admin"
+              className="mt-5 inline-flex h-11 items-center justify-center rounded-full border border-hairline px-7 text-[15px] font-semibold text-foreground transition-colors hover:bg-surface-sunken"
+            >
+              Open admin console
+            </Link>
+          </section>
+        ) : null}
+
+        {/* Sign out */}
+        <section className="rounded-3xl bg-surface-sunken p-7 md:p-8">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-[17px] font-medium text-foreground">Sign out</h2>
+              <p className="mt-1.5 text-[14px] text-ink-muted">
+                End your session on this device.
               </p>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Change Password */}
-      <Card className="rounded-3xl border-none shadow-sm mb-6">
-        <CardContent className="p-8">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-              <Lock className="w-5 h-5 text-primary" />
-            </div>
-            <h2 className="text-xl font-bold">Change Password</h2>
-          </div>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="At least 6 characters"
-                className="rounded-xl"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Repeat new password"
-                className="rounded-xl"
-                required
-              />
-            </div>
-            <Button
-              type="submit"
-              className="rounded-full"
-              disabled={saving}
-            >
-              {saving ? 'Updating…' : 'Update Password'}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-
-      {/* Sign Out */}
-      <Card className="rounded-3xl border-none shadow-sm">
-        <CardContent className="p-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
-                <LogOut className="w-5 h-5 text-destructive" />
-              </div>
-              <div>
-                <h2 className="font-bold">Sign Out</h2>
-                <p className="text-sm text-muted-foreground">Sign out of your account on this device.</p>
-              </div>
-            </div>
-            <Button
-              variant="destructive"
-              className="rounded-full"
+            <button
+              type="button"
               onClick={signOut}
+              className="inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-destructive/30 px-7 text-[15px] font-semibold text-destructive transition-colors hover:bg-destructive hover:text-destructive-foreground"
             >
-              Sign Out
-            </Button>
+              Sign out
+            </button>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+        </section>
+      </div>
+    </AccountShell>
   );
 }

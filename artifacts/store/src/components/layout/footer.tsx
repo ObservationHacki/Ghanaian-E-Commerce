@@ -1,184 +1,144 @@
 import { Link } from 'wouter';
-import { Facebook, Instagram, Twitter, Youtube, MessageCircle, Send } from 'lucide-react';
+import { Facebook, Instagram, Twitter, MessageCircle, MapPin } from 'lucide-react';
 
-const SHOP_LINKS = [
-  { label: 'All Products', href: '/shop' },
-  { label: 'Phones & Tablets', href: '/shop?category=phones' },
-  { label: 'Laptops & Computers', href: '/shop?category=laptops' },
-  { label: 'Fashion', href: '/shop?category=fashion' },
-  { label: 'Accessories', href: '/shop?category=accessories' },
-  { label: 'Gaming', href: '/shop?category=gaming' },
-  { label: 'Smart Home', href: '/shop?category=smart-home' },
+const COLUMNS: Array<{ title: string; links: Array<{ label: string; href: string }> }> = [
+  {
+    title: 'Shop',
+    links: [
+      { label: 'All products', href: '/shop' },
+      { label: 'New arrivals', href: '/shop?sort=newest' },
+      { label: 'Flash deals', href: '/shop?deals=1' },
+      { label: 'Best sellers', href: '/shop?sort=popular' },
+      { label: 'Wishlist', href: '/wishlist' },
+    ],
+  },
+  {
+    title: 'Support',
+    links: [
+      { label: 'Help centre', href: '/info/faq' },
+      { label: 'Shipping & delivery', href: '/info/shipping' },
+      { label: 'Returns & refunds', href: '/info/returns' },
+      { label: 'Payment options', href: '/info/payments' },
+      { label: 'Contact us', href: '/info/contact' },
+    ],
+  },
+  {
+    title: 'Account',
+    links: [
+      { label: 'My orders', href: '/account/orders' },
+      { label: 'Saved addresses', href: '/account/addresses' },
+      { label: 'Settings', href: '/account/settings' },
+      { label: 'Sign in', href: '/auth/login' },
+      { label: 'Create account', href: '/auth/register' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'About VBUY', href: '/info/about' },
+      { label: 'Privacy policy', href: '/info/privacy' },
+      { label: 'Terms of service', href: '/info/terms' },
+    ],
+  },
 ];
 
-const SUPPORT_LINKS = [
-  { label: 'FAQ', href: '/faq' },
-  { label: 'Shipping & Delivery', href: '/shipping' },
-  { label: 'Returns & Refunds', href: '/returns' },
-  { label: 'Track Your Order', href: '/track' },
-  { label: 'Contact Us', href: '/contact' },
-  { label: 'WhatsApp Support', href: 'https://wa.me/233200000000', external: true },
-];
+const PAYMENTS = ['MTN MoMo', 'Telecel Cash', 'AT Money'];
 
-const COMPANY_LINKS = [
-  { label: 'About Us', href: '/about' },
-  { label: 'Careers', href: '/careers' },
-  { label: 'Press', href: '/press' },
-  { label: 'Privacy Policy', href: '/privacy' },
-  { label: 'Terms of Service', href: '/terms' },
-  { label: 'Cookie Policy', href: '/cookies' },
-];
+const WHATSAPP =
+  (import.meta.env.VITE_CONTACT_WHATSAPP as string | undefined)?.trim() ||
+  (import.meta.env.VITE_CONTACT_PHONE as string | undefined)?.replace(/\D/g, '') ||
+  '';
 
-const PAYMENT_METHODS = ['MTN MoMo', 'Telecel Cash', 'Visa', 'Mastercard', 'Bank Transfer'];
-
-const SOCIAL = [
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Twitter, href: '#', label: 'Twitter / X' },
-  { icon: Youtube, href: '#', label: 'YouTube' },
-  { icon: MessageCircle, href: 'https://wa.me/233200000000', label: 'WhatsApp' },
+const SOCIALS = [
+  ...(WHATSAPP
+    ? [{ label: 'WhatsApp', href: `https://wa.me/${WHATSAPP}`, Icon: MessageCircle }]
+    : []),
+  { label: 'Instagram', href: 'https://instagram.com', Icon: Instagram },
+  { label: 'Facebook', href: 'https://facebook.com', Icon: Facebook },
+  { label: 'X', href: 'https://x.com', Icon: Twitter },
 ];
 
 export function Footer() {
-  const year = new Date().getFullYear();
-
   return (
-    <footer className="bg-[#F5F5F7] dark:bg-[#111] border-t border-gray-200 dark:border-white/10 mt-auto">
-
-      {/* Newsletter band */}
-      <div className="bg-[#1D1D1F] dark:bg-black py-14">
-        <div className="container mx-auto px-4 md:px-8 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-center md:text-left">
-            <h3 className="text-2xl font-bold text-white tracking-tight mb-1">Stay in the loop</h3>
-            <p className="text-gray-400 text-sm">Exclusive deals, new arrivals, and Ghana's best prices — right to your inbox.</p>
-          </div>
-          <form
-            className="flex gap-2 w-full max-w-md"
-            onSubmit={e => e.preventDefault()}
-          >
-            <div className="relative flex-1">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="w-full h-11 px-4 pr-12 rounded-full bg-white/10 border border-white/20 text-white placeholder:text-gray-500 text-sm focus:outline-none focus:border-blue-500 focus:bg-white/15 transition-all"
-              />
-            </div>
-            <button
-              type="submit"
-              className="h-11 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shrink-0 flex items-center gap-2 transition-colors"
-            >
-              <Send className="h-3.5 w-3.5" />
-              Subscribe
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* Main links grid */}
-      <div className="container mx-auto px-4 md:px-8 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-8">
-
-          {/* Brand column */}
-          <div className="col-span-2 md:col-span-1 space-y-5">
-            <div>
-              <span className="text-xl font-black tracking-tight text-[#1D1D1F] dark:text-white" style={{ fontFamily: 'Inter, -apple-system, sans-serif' }}>
-                KUMASI
+    <footer className="border-t border-hairline bg-background">
+      <div className="container-page py-16 md:py-20">
+        <div className="grid gap-12 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,2.4fr)]">
+          {/* Brand */}
+          <div className="max-w-sm">
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-xl font-semibold tracking-[-0.04em] text-foreground">
+                VBUY
               </span>
-              <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white tracking-wider">GH</span>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-w-[220px]">
-              Ghana's premium online store. Genuine products, fast delivery, and trusted service — everywhere in Ghana.
+              <span className="inline-flex h-[18px] items-center rounded-md bg-accent px-1.5 text-[10px] font-bold tracking-[0.1em] text-accent-foreground">
+                GH
+              </span>
+            </Link>
+            <p className="mt-5 text-[15px] leading-relaxed text-ink-muted text-pretty">
+              Ghana's destination for verified tech, fashion and home essentials — delivered to
+              your door in every region.
+            </p>
+            <p className="mt-5 flex items-start gap-2 text-caption text-ink-subtle">
+              <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              Adum, Kumasi · Ashanti Region, Ghana
             </p>
 
-            {/* Social icons */}
-            <div className="flex gap-2">
-              {SOCIAL.map(s => (
+            <div className="mt-6 flex items-center gap-2">
+              {SOCIALS.map(({ label, href, Icon }) => (
                 <a
-                  key={s.label}
-                  href={s.href}
+                  key={label}
+                  href={href}
                   target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label={s.label}
-                  className="h-8 w-8 rounded-full bg-gray-200 dark:bg-white/10 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-[#1D1D1F] hover:text-white dark:hover:bg-white dark:hover:text-[#1D1D1F] transition-all"
+                  rel="noreferrer noopener"
+                  aria-label={label}
+                  className="flex h-10 w-10 items-center justify-center rounded-full border border-hairline text-ink-muted transition-colors hover:border-transparent hover:bg-foreground hover:text-background"
                 >
-                  <s.icon className="h-3.5 w-3.5" />
+                  <Icon className="h-[18px] w-[18px]" />
                 </a>
               ))}
             </div>
           </div>
 
-          {/* Shop */}
-          <div>
-            <h4 className="text-xs font-bold text-[#1D1D1F] dark:text-white uppercase tracking-widest mb-5">Shop</h4>
-            <ul className="space-y-3">
-              {SHOP_LINKS.map(l => (
-                <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#1D1D1F] dark:hover:text-white transition-colors">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Support */}
-          <div>
-            <h4 className="text-xs font-bold text-[#1D1D1F] dark:text-white uppercase tracking-widest mb-5">Support</h4>
-            <ul className="space-y-3">
-              {SUPPORT_LINKS.map(l => (
-                <li key={l.href}>
-                  {l.external ? (
-                    <a href={l.href} target="_blank" rel="noopener noreferrer" className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#1D1D1F] dark:hover:text-white transition-colors">
-                      {l.label}
-                    </a>
-                  ) : (
-                    <Link href={l.href} className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#1D1D1F] dark:hover:text-white transition-colors">
-                      {l.label}
-                    </Link>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h4 className="text-xs font-bold text-[#1D1D1F] dark:text-white uppercase tracking-widest mb-5">Company</h4>
-            <ul className="space-y-3">
-              {COMPANY_LINKS.map(l => (
-                <li key={l.href}>
-                  <Link href={l.href} className="text-sm text-gray-500 dark:text-gray-400 hover:text-[#1D1D1F] dark:hover:text-white transition-colors">
-                    {l.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+          {/* Link columns */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-10 sm:grid-cols-4">
+            {COLUMNS.map((column) => (
+              <nav key={column.title} aria-label={column.title}>
+                <h2 className="text-caption font-semibold uppercase tracking-[0.14em] text-foreground">
+                  {column.title}
+                </h2>
+                <ul className="mt-5 space-y-3">
+                  {column.links.map((link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="text-[15px] text-ink-muted transition-colors hover:text-foreground"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* Payment methods */}
-        <div className="mt-14 pt-8 border-t border-gray-200 dark:border-white/10">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
-            <div>
-              <p className="text-xs text-gray-400 mb-3 font-medium uppercase tracking-widest">We accept</p>
-              <div className="flex flex-wrap gap-2">
-                {PAYMENT_METHODS.map(m => (
-                  <span key={m} className="px-3 py-1.5 rounded-md border border-gray-200 dark:border-white/10 text-[11px] font-semibold text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5">
-                    {m}
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col md:items-end gap-1.5">
-              <p className="text-xs text-gray-400">© {year} Kumasi Store. All rights reserved.</p>
-              <div className="flex gap-4 text-xs text-gray-400">
-                <Link href="/privacy" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Privacy</Link>
-                <Link href="/terms" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Terms</Link>
-                <Link href="/cookies" className="hover:text-[#1D1D1F] dark:hover:text-white transition-colors">Cookies</Link>
-              </div>
-            </div>
+      {/* Payments + legal */}
+      <div className="border-t border-hairline">
+        <div className="container-page flex flex-col gap-6 py-7 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {PAYMENTS.map((method) => (
+              <span
+                key={method}
+                className="rounded-lg border border-hairline px-2.5 py-1.5 text-[11px] font-medium text-ink-muted"
+              >
+                {method}
+              </span>
+            ))}
           </div>
+          <p className="text-caption text-ink-subtle">
+            © {new Date().getFullYear()} VBUY. All rights reserved.
+          </p>
         </div>
       </div>
     </footer>

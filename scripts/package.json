@@ -5,10 +5,23 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "catalog:template": "tsx ./src/catalog/template.ts",
+    "catalog:from-pricelist": "tsx ./src/catalog/from-pricelist.ts",
+    "catalog:import": "tsx ./src/catalog/import.ts",
+    "catalog:enrich-descriptions": "tsx ./src/catalog/enrich-descriptions.ts",
+    "catalog:find-images": "tsx ./src/catalog/find-product-images.ts",
+    "catalog:rescrape-images": "tsx ./src/catalog/rescrape-product-images.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "exceljs": "^4.4.0",
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
     "@types/node": "catalog:",
+    "@types/sharp": "^0.32.0",
     "tsx": "catalog:"
   }
 }
